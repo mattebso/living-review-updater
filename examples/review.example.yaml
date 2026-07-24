@@ -1,0 +1,30 @@
+# Example configuration for one living systematic review.
+# Everything stays on your machine. Copy to review.yaml and edit.
+
+review:
+  name: "IV magnesium for acute asthma"
+  contact_email: "you@example.org"   # required by NCBI/PubMed API etiquette
+
+# Where the tool looks for newly-published records each run.
+sources:
+  pubmed:
+    # Your exact PubMed search strategy (same one used for the original review).
+    query: '("magnesium sulfate"[MeSH] OR magnesium) AND (asthma OR bronchospasm) AND randomized'
+  europepmc:
+    query: 'magnesium AND asthma AND randomized'
+
+# Your prior screening decisions, exported from ASReview.
+# CSV with columns: title, abstract, included (1 = included, 0 = excluded).
+prior_decisions: "asreview_export.csv"
+
+# Local store of everything already seen (so we never re-show a record).
+corpus_db: "corpus.sqlite"
+
+screening:
+  # The tool RANKS/FLAGS only and reports recall; it never auto-excludes.
+  # Recall targets to report in each digest so you choose where to stop screening.
+  report_recall_targets: [0.95, 0.99, 1.0]
+
+output:
+  digest: "digests/"            # human-readable run summary with recall/effort numbers
+  reimport_ris: "new_candidates.ris"   # re-import this into ASReview
