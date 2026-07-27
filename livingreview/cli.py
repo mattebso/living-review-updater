@@ -6,7 +6,8 @@ Wires the v1 pipeline:
   -> rank new records -> write digest + ASReview re-import file -> update corpus.
 
 STATUS: skeleton. The RelevanceRanker core is implemented and validated
-(see eval/); the source connectors, digest renderer, and corpus store are TODO.
+(see eval/); source connectors and the corpus store are done; the digest
+renderer and full pipeline wiring are TODO.
 """
 from __future__ import annotations
 
@@ -19,8 +20,9 @@ from .config import ReviewConfig
 def run(config_path: str) -> int:
     cfg = ReviewConfig.load(config_path)
     print(f"[living-review] loaded config for: {cfg.name}")
-    print("  Pipeline not fully wired yet. Implemented: config, classifier core, dedupe.")
-    print("  TODO before first real run: PubMed + Europe PMC connectors, corpus store, digest.")
+    print("  Pipeline not fully wired yet. Implemented: config, classifier core, dedupe,")
+    print("  PubMed + Europe PMC connectors, corpus store.")
+    print("  TODO before first real run: digest renderer + pipeline wiring.")
     print("  Safety: this tool ranks/flags for human review and never auto-excludes.")
     return 0
 
