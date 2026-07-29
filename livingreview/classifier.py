@@ -84,6 +84,49 @@ def recall_at_screened(labels_in_rank_order: Sequence[int], fraction_screened: f
     return float(y[:k].sum()) / total_pos
 
 
+def calibrate_screening_effort(
+    titles, abstracts, included, targets: Sequence[float], n_splits: int = 5
+) -> dict[float, float | None]:
+    """Estimate, from the review's OWN prior decisions, what fraction of a
+    ranked list a human must screen to reach each target recall.
+
+    Method: stratified out-of-fold cross-validation — every prior decision is
+    scored by a model that never saw it, then the whole set is ranked by those
+    out-of-fold scores and `screen_fraction_for_recall` is read off the ranking.
+    This is an honest estimate for records drawn from a similar distribution;
+    the digest must still present it as an estimate, not a guarantee.
+    """
+    from sklearn.model_selection import StratifiedKFold
+
+    y = np.asarray(included).astype(int)
+    min_class = min(int(y.sum()), int(len(y) - y.sum()))
+    # Every TRAINING fold must keep >= 3 records per class (fit()'s own floor).
+    # A held-out fold removes ceil(class_count / n_splits) records per class,
+    # so grow n_splits until the training side stays >= 3, or give up honestly.
+    n_splits = min(n_splits, min_class)
+    while (n_splits <= min_class
+           and min_class - (min_class + n_splits - 1) // n_splits < 3):
+        n_splits += 1
+    if n_splits < 2 or n_splits > min_class:
+        return {t: None for t in targets}
+    oof = np.zeros(len(y))
+    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=0)
+    titles = list(titles)
+    abstracts = list(abstracts)
+    for train_idx, test_idx in skf.split(np.zeros(len(y)), y):
+        ranker = RelevanceRanker().fit(
+            [titles[i] for i in train_idx],
+            [abstracts[i] for i in train_idx],
+            y[train_idx],
+        )
+        oof[test_idx] = ranker.score(
+            [titles[i] for i in test_idx], [abstracts[i] for i in test_idx]
+        )
+    order = np.argsort(-oof)
+    ranked_labels = y[order]
+    return {t: screen_fraction_for_recall(ranked_labels, t) for t in targets}
+
+
 def screen_fraction_for_recall(labels_in_rank_order: Sequence[int], target_recall: float) -> float | None:
     """Fraction of the ranked list a human must screen to reach target_recall.
     None if there are no positives. This is the number a digest reports so the

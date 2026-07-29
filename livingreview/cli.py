@@ -1,13 +1,9 @@
 """Command-line entry point: `living-review run --config review.yaml`.
 
-Wires the v1 pipeline:
+Pipeline (see pipeline.py):
   load config -> load prior decisions -> (per source) fetch new records
   -> dedupe against corpus -> train RelevanceRanker on prior decisions
-  -> rank new records -> write digest + ASReview re-import file -> update corpus.
-
-STATUS: skeleton. The RelevanceRanker core is implemented and validated
-(see eval/); source connectors and the corpus store are done; the digest
-renderer and full pipeline wiring are TODO.
+  -> rank new records -> write digest + ASReview re-import RIS -> update corpus.
 """
 from __future__ import annotations
 
@@ -15,15 +11,24 @@ import argparse
 import sys
 
 from .config import ReviewConfig
+from .pipeline import run_update
 
 
 def run(config_path: str) -> int:
     cfg = ReviewConfig.load(config_path)
-    print(f"[living-review] loaded config for: {cfg.name}")
-    print("  Pipeline not fully wired yet. Implemented: config, classifier core, dedupe,")
-    print("  PubMed + Europe PMC connectors, corpus store.")
-    print("  TODO before first real run: digest renderer + pipeline wiring.")
-    print("  Safety: this tool ranks/flags for human review and never auto-excludes.")
+    print(f"[living-review] {cfg.name}: starting update run")
+    try:
+        result = run_update(cfg)
+    except Exception as e:  # surface a clean message; stack traces help nobody here
+        print(f"[living-review] ERROR: {e}", file=sys.stderr)
+        return 1
+    for source, n in result.source_counts.items():
+        print(f"  {source}: {n} record(s) returned")
+    print(f"  {result.n_new_candidates} new candidate(s) after dedupe")
+    print(f"  digest: {result.digest_path}")
+    if result.reimport_path:
+        print(f"  re-import file (RIS, ranked order): {result.reimport_path}")
+    print("  Reminder: this tool ranks for human review; it never auto-excludes.")
     return 0
 
 

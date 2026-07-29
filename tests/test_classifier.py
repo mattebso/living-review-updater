@@ -52,3 +52,22 @@ def test_screen_fraction_for_recall_monotonic():
     assert screen_fraction_for_recall(labels_worst, 1.0) == 1.0
     # No positives -> undefined (None).
     assert screen_fraction_for_recall([0, 0, 0], 0.95) is None
+
+
+def test_calibration_returns_none_when_too_few_decisions():
+    from livingreview.classifier import calibrate_screening_effort
+    titles, abstracts, labels = _toy_corpus()  # 3 included: below the CV floor
+    cal = calibrate_screening_effort(titles, abstracts, labels, targets=[0.95, 1.0])
+    assert cal == {0.95: None, 1.0: None}
+
+
+def test_calibration_produces_fractions_with_enough_decisions():
+    from livingreview.classifier import calibrate_screening_effort
+    titles, abstracts, labels = _toy_corpus()
+    # Grow to 6 included / 8 excluded by echoing on-topic/off-topic variants.
+    titles = titles + [t + " follow-up study" for t in titles]
+    abstracts = abstracts + [a + " Replication cohort." for a in abstracts]
+    labels = labels + labels
+    cal = calibrate_screening_effort(titles, abstracts, labels, targets=[0.95, 1.0])
+    for frac in cal.values():
+        assert frac is not None and 0 < frac <= 1.0

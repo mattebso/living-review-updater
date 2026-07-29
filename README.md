@@ -4,7 +4,7 @@
 
 Maintaining a *living* systematic review means periodically re-running your searches and screening every new result. That screening burden is the #1 reason living reviews get abandoned ([Cochrane, 2025](https://www.cochranelibrary.com/) found only about half of a cohort of living reviews were ever updated). Existing automation either locks you inside a commercial platform (Nested Knowledge, DistillerSR) or makes you do the search-and-re-import by hand (ASReview). This tool fills the gap: it re-runs your searches, removes what you've already seen, and uses **your own prior include/exclude decisions** to put the most likely-relevant new studies at the top of the pile — then hands them back to the screening tool you already use.
 
-> **Status: early development (v0, pre-release).** The core relevance mechanic is validated (see below); the data-source connectors and packaging are in progress. Not yet ready for production use.
+> **Status: early development (v0, pre-release).** The full pipeline now runs end to end — searches, dedupe, ranking, digest and ASReview re-import — and has been exercised against the live PubMed and Europe PMC APIs. The core relevance mechanic is validated (see below). Still missing before production use: a true original→update backtest with a real review team, and packaging/release to PyPI.
 
 ## Does the core idea actually work?
 
@@ -27,11 +27,28 @@ Getting this wrong could hide a relevant study and bias a medical or policy conc
 4. **Keep your existing tool.** Output re-imports into ASReview (v1); the tool does not replace your screening workflow.
 5. **Open and self-hostable.** Your search corpus and decisions never leave your machine. Free public APIs only; no always-on server needed.
 
-## How it will work (v1 scope)
+## How it works
 
-1. Describe your review once in a small config file (your saved searches per database, a schedule).
-2. On each run it: re-runs the searches (PubMed + Europe PMC in v1) → removes records already in your corpus → ranks the rest with a classifier trained on your prior decisions → writes a digest (with the recall/effort numbers) and a file you re-import into ASReview.
-3. Run it on a cron or a scheduled GitHub Action.
+1. Describe your review once in a small config file — your saved search per database, plus a CSV export of your prior screening decisions. Start from [`examples/review.example.yaml`](examples/review.example.yaml).
+2. Run it:
+
+   ```bash
+   living-review run --config review.yaml
+   ```
+
+   Each run re-runs the searches (PubMed + Europe PMC), fetching only what is new since that source's last successful run → removes records already in your corpus or already screened → ranks the rest with a classifier trained on your prior decisions → writes a Markdown digest and a ranked RIS file.
+3. Read the digest, then re-import `new_candidates.ris` into ASReview and screen top-down.
+4. Run it on a cron or a scheduled GitHub Action.
+
+### What a run produces
+
+- **`digests/<date>-update.md`** — how many records each source returned, how many survived dedupe, the calibration table (how far down the ranking you must screen for 95% / 99% / 100% recall, estimated by cross-validation on *your own* prior decisions), and the full ranked list. If you have few included records the digest says so plainly and tells you not to use the table as a stopping rule.
+- **`new_candidates.ris`** — the same candidates in ranked order, for re-import into ASReview or any reference manager.
+- **`corpus.sqlite`** — the local ledger of everything seen, plus each source's incremental cursor. Nothing leaves your machine.
+
+### Prior decisions format
+
+A CSV with `title`, `abstract`, and a label column (`included`, `label_included`, or `included_final`), where `1` = included and `0` = excluded. Rows labelled `-1` or left blank are treated as never screened and ignored. This is what ASReview exports.
 
 ## License
 
