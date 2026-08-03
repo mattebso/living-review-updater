@@ -4,7 +4,19 @@
 
 Maintaining a *living* systematic review means periodically re-running your searches and screening every new result. That screening burden is the #1 reason living reviews get abandoned ([Cochrane, 2025](https://www.cochranelibrary.com/) found only about half of a cohort of living reviews were ever updated). Existing automation either locks you inside a commercial platform (Nested Knowledge, DistillerSR) or makes you do the search-and-re-import by hand (ASReview). This tool fills the gap: it re-runs your searches, removes what you've already seen, and uses **your own prior include/exclude decisions** to put the most likely-relevant new studies at the top of the pile — then hands them back to the screening tool you already use.
 
-> **Status: early development (v0, pre-release).** The full pipeline now runs end to end — searches, dedupe, ranking, digest and ASReview re-import — and has been exercised against the live PubMed and Europe PMC APIs. The core relevance mechanic is validated on a temporal (original→update) backtest (see below). Still missing before production use: validation with a real review team on their own review, and packaging/release to PyPI.
+> **Status: early development (v0.1.0, pre-release).** The full pipeline runs end to end — searches, dedupe, ranking, digest and ASReview re-import — and has been exercised against the live PubMed and Europe PMC APIs. The core relevance mechanic is validated on a temporal (original→update) backtest (see below). Still missing before production use: validation with a real review team on their own review.
+
+## Install
+
+```bash
+pip install living-review-updater
+```
+
+Requires Python 3.10+. Until the first PyPI release lands, install from source instead:
+
+```bash
+pip install git+https://github.com/mattebso/living-review-updater
+```
 
 ## Does the core idea actually work?
 

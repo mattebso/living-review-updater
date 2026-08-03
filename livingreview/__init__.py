@@ -1,7 +1,7 @@
 """Living Review Updater — keep a systematic review current without re-screening
 everything by hand. Ranks/flags new studies for human review; never auto-excludes.
 """
-__version__ = "0.0.1"
+__version__ = "0.1.0"
 
 from .classifier import (
     RelevanceRanker,
