@@ -12,7 +12,7 @@ Maintaining a *living* systematic review means periodically re-running your sear
 pip install living-review-updater
 ```
 
-Requires Python 3.10+. Until the first PyPI release lands, install from source instead:
+Requires Python 3.10+. To try the latest unreleased changes, install from source:
 
 ```bash
 pip install git+https://github.com/mattebso/living-review-updater
